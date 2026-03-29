@@ -4,6 +4,7 @@ from datetime import date, datetime
 
 import pandas as pd
 import streamlit as st
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -166,6 +167,12 @@ st.markdown("<hr>", unsafe_allow_html=True)
 # ─── Search area ────────────────────────────────────────────────────────────
 col_input, col_btn, col_trending = st.columns([4, 1, 3])
 
+# Populate the text input from the dropdown selection via session state
+if "trending_select" in st.session_state:
+    chosen = st.session_state["trending_select"]
+    if chosen and chosen != "— select —":
+        st.session_state["search_input"] = chosen
+
 with col_input:
     st.markdown('<p class="section-label">Search any topic</p>', unsafe_allow_html=True)
     search_query = st.text_input(
@@ -180,25 +187,22 @@ with col_btn:
     analyze_clicked = st.button("Analyze", use_container_width=True)
 
 with col_trending:
-    st.markdown('<p class="section-label">Or pick a trending topic</p>', unsafe_allow_html=True)
+    st.markdown('<p class="section-label">Or pick a suggested topic</p>', unsafe_allow_html=True)
     trending_topics = fetch_trending_now()
     if trending_topics:
-        selected_trending = st.selectbox(
+        st.selectbox(
             label="trending",
             options=["— select —"] + trending_topics,
             label_visibility="collapsed",
             key="trending_select",
         )
     else:
-        selected_trending = "— select —"
         st.caption("Could not load trending topics")
 
 # Resolve the active keyword
 keyword = ""
 if analyze_clicked and search_query.strip():
     keyword = search_query.strip()
-elif selected_trending and selected_trending != "— select —":
-    keyword = selected_trending
 
 # ─── Analysis ───────────────────────────────────────────────────────────────
 if keyword:
@@ -308,6 +312,96 @@ if keyword:
                 st.plotly_chart(fig_vel, width="stretch", config={"displayModeBar": False})
         else:
             st.warning("Forecast chart unavailable — no model output found.")
+
+        # ── Extended metrics + data tables ──────────────────────────────────
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown('<p class="section-label">Extended metrics</p>', unsafe_allow_html=True)
+
+        raw_data = result.get("raw_data", [])
+        if raw_data:
+            hist_df = pd.DataFrame(raw_data)
+            hist_df["date"] = pd.to_datetime(hist_df["date"])
+            hist_df = hist_df.sort_values("date")
+
+            scores = hist_df["interest"]
+            avg_score      = scores.mean()
+            volatility     = scores.std()
+            median_score   = scores.median()
+            score_3m_ago   = scores.iloc[-13] if len(scores) >= 13 else scores.iloc[0]
+            momentum_pct   = ((current - float(score_3m_ago)) / float(score_3m_ago) * 100) if score_3m_ago else 0.0
+            pct_of_peak    = (current / peak * 100) if peak else 0.0
+            weeks_above_50 = int((scores >= 50).sum())
+
+            m1, m2, m3, m4, m5, m6, m7 = st.columns(7)
+            m1.metric("Avg Score (5y)",   f"{avg_score:.1f}")
+            m2.metric("Median Score",     f"{median_score:.1f}")
+            m3.metric("Volatility (σ)",   f"{volatility:.1f}")
+            m4.metric("3-month Momentum", f"{momentum_pct:+.1f}%")
+            m5.metric("% of Peak",        f"{pct_of_peak:.1f}%")
+            m6.metric("Weeks ≥ 50",       str(weeks_above_50))
+            m7.metric("Data Points",      str(len(scores)))
+
+        st.markdown("<hr>", unsafe_allow_html=True)
+
+        with st.expander("📊 Raw data & forecast tables", expanded=False):
+            tab_hist, tab_forecast = st.tabs(["Historical interest", "Forecast"])
+
+            with tab_hist:
+                if raw_data:
+                    display_hist = hist_df.copy()
+                    display_hist["date"] = display_hist["date"].dt.strftime("%Y-%m-%d")
+                    display_hist.columns = ["Date", "Interest Score"]
+                    display_hist = display_hist.sort_values("Date", ascending=False).reset_index(drop=True)
+
+                    st.dataframe(
+                        display_hist,
+                        use_container_width=True,
+                        height=320,
+                        hide_index=True,
+                    )
+                    csv_hist = display_hist.to_csv(index=False).encode("utf-8")
+                    st.download_button(
+                        label="⬇ Download historical CSV",
+                        data=csv_hist,
+                        file_name=f"{keyword}_historical.csv",
+                        mime="text/csv",
+                    )
+                else:
+                    st.info("No historical data available.")
+
+            with tab_forecast:
+                if forecast_df is not None:
+                    today_ts = pd.Timestamp(date.today())
+                    fcast_display = forecast_df[forecast_df["ds"] >= today_ts][
+                        ["ds", "yhat", "yhat_lower", "yhat_upper"]
+                    ].copy()
+                    fcast_display["ds"] = fcast_display["ds"].dt.strftime("%Y-%m-%d")
+                    fcast_display = fcast_display.rename(columns={
+                        "ds": "Date",
+                        "yhat": "Forecast",
+                        "yhat_lower": "Lower (80%)",
+                        "yhat_upper": "Upper (80%)",
+                    })
+                    fcast_display[["Forecast", "Lower (80%)", "Upper (80%)"]] = (
+                        fcast_display[["Forecast", "Lower (80%)", "Upper (80%)"]].round(1)
+                    )
+                    fcast_display = fcast_display.reset_index(drop=True)
+
+                    st.dataframe(
+                        fcast_display,
+                        use_container_width=True,
+                        height=320,
+                        hide_index=True,
+                    )
+                    csv_fcast = fcast_display.to_csv(index=False).encode("utf-8")
+                    st.download_button(
+                        label="⬇ Download forecast CSV",
+                        data=csv_fcast,
+                        file_name=f"{keyword}_forecast.csv",
+                        mime="text/csv",
+                    )
+                else:
+                    st.info("No forecast data available.")
 
 # ─── Recent searches ────────────────────────────────────────────────────────
 st.markdown("<hr>", unsafe_allow_html=True)

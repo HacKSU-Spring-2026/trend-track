@@ -42,38 +42,28 @@ def fetch_interest_over_time(keyword: str, timeframe: str = "today 5-y") -> pd.D
 
 
 _FALLBACK_TOPICS = [
-    "ChatGPT", "Bitcoin", "Tesla", "TikTok", "NFT",
-    "Wordle", "Metaverse", "AI", "Netflix", "Dogecoin",
-    "Instagram", "Elon Musk", "OpenAI", "Climate Change", "Crypto",
-    "YouTube Shorts", "Apple Vision Pro", "Threads", "Midjourney", "Sora",
+    # AI & Tech
+    "ChatGPT", "OpenAI", "Gemini AI", "Claude AI", "Midjourney", "Sora",
+    "AI", "Generative AI", "LLM", "Prompt Engineering",
+    "Apple Vision Pro", "Meta Quest", "Rabbit R1", "Humane AI Pin",
+    # Social & Apps
+    "TikTok", "Threads", "BeReal", "Bluesky", "Mastodon",
+    "Instagram", "YouTube Shorts", "Twitch", "Discord", "Clubhouse",
+    # Crypto & Finance
+    "Bitcoin", "Ethereum", "Dogecoin", "NFT", "Crypto",
+    "GameStop", "meme stocks", "SPAC", "Web3", "DeFi",
+    # Pop culture & viral
+    "Wordle", "Squid Game", "Wednesday Addams", "Barbie movie",
+    "Taylor Swift", "Elon Musk", "Andrew Tate", "MrBeast",
+    # Tech products & companies
+    "Tesla", "Netflix", "Metaverse", "Neuralink", "SpaceX",
+    "Vision Pro", "Notion", "Figma", "Perplexity AI",
+    # Trends & movements
+    "Climate Change", "quiet quitting", "remote work", "hustle culture",
+    "plant-based meat", "electric vehicles", "Buy Now Pay Later",
 ]
 
 
 def fetch_trending_now(geo: str = "US") -> list[str]:
-    """
-    Return trending search topics. Tries pytrends realtime_trending_searches first,
-    then today_searches, then falls back to a curated static list.
-    """
-    # Attempt 1: realtime trending (newer endpoint)
-    try:
-        df = _pytrends.realtime_trending_searches(pn=geo)
-        topics = df["title"].dropna().tolist()
-        if topics:
-            logger.info(f"Fetched {len(topics)} realtime trending topics")
-            return topics[:20]
-    except Exception as exc:
-        logger.warning(f"realtime_trending_searches failed: {exc}")
-
-    # Attempt 2: today_searches
-    try:
-        df = _pytrends.today_searches(pn=geo)
-        topics = df.tolist()
-        if topics:
-            logger.info(f"Fetched {len(topics)} today_searches topics")
-            return topics[:20]
-    except Exception as exc:
-        logger.warning(f"today_searches failed: {exc}")
-
-    # Fallback: static curated list
-    logger.warning("Using fallback topic list — live trending unavailable")
+    """Return the curated static topic list for the suggestions dropdown."""
     return _FALLBACK_TOPICS
