@@ -1,13 +1,15 @@
 from datetime import date
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 import pandas as pd
 
-from data import fetch, mongo, snowflake_client, s3_client
+from data import fetch, mongo
 from model import prophet_model, trend_phase, death_detector
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
+_executor = ThreadPoolExecutor(max_workers=2)
 
 
 def get_or_fetch(keyword: str, force_refresh: bool = False) -> dict:
@@ -18,7 +20,7 @@ def get_or_fetch(keyword: str, force_refresh: bool = False) -> dict:
     1. Check MongoDB cache — return immediately if fresh and force_refresh is False.
     2. Otherwise run the full pipeline:
        fetch → prophet → classify phase → detect death
-    3. Persist results to MongoDB, S3, and Snowflake.
+    3. Persist results to MongoDB.
     4. Return the result dict.
 
     Result dict keys:
@@ -39,7 +41,6 @@ def get_or_fetch(keyword: str, force_refresh: bool = False) -> dict:
         cached = mongo.get_cached_result(keyword)
         if cached and not mongo.is_stale(cached):
             logger.info(f"Returning fresh cache for '{keyword}'")
-            # forecast_df is not stored in Mongo; flag its absence
             cached["forecast_df"] = None
             return cached
 
@@ -81,48 +82,13 @@ def get_or_fetch(keyword: str, force_refresh: bool = False) -> dict:
         "forecast_df": forecast_df,  # in-memory only
     }
 
-    # --- Persist (non-blocking failures) ---
-    _persist(keyword, df, forecast_df, result, phase, death_date, days_left, conf_upper, conf_lower)
+    # --- Persist in background (non-blocking) ---
+    _executor.submit(_persist, keyword, result)
 
     return result
 
 
-def _persist(
-    keyword: str,
-    raw_df: pd.DataFrame,
-    forecast_df: pd.DataFrame,
-    result: dict,
-    phase: trend_phase.TrendPhase,
-    death_date: Optional[date],
-    days_left: Optional[int],
-    conf_upper: float,
-    conf_lower: float,
-) -> None:
-    """Fire-and-forget persistence to all three stores. Errors are logged, not raised."""
-
-    # MongoDB
+def _persist(keyword: str, result: dict) -> None:
+    """Fire-and-forget persistence to MongoDB. Errors are logged, not raised."""
     mongo_payload = {k: v for k, v in result.items() if k != "forecast_df"}
     mongo.save_result(keyword, mongo_payload)
-
-    # S3 — raw data
-    s3_client.upload_dataframe(
-        raw_df,
-        s3_client.build_s3_key(keyword, "raw"),
-    )
-
-    # S3 — forecast
-    s3_client.upload_dataframe(
-        forecast_df,
-        s3_client.build_s3_key(keyword, "predictions"),
-    )
-
-    # Snowflake
-    snowflake_client.write_trend_scores(keyword, raw_df)
-    snowflake_client.write_prediction(
-        topic=keyword,
-        predicted_death=death_date.isoformat() if death_date else None,
-        days_remaining=days_left,
-        trend_phase=phase.value,
-        confidence_upper=conf_upper,
-        confidence_lower=conf_lower,
-    )
