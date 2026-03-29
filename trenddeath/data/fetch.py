@@ -5,9 +5,6 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-_pytrends = TrendReq(hl="en-US", tz=360, timeout=(10, 25), retries=2, backoff_factor=0.5)
-
-
 def fetch_interest_over_time(keyword: str, timeframe: str = "today 5-y") -> pd.DataFrame:
     """
     Fetch weekly interest-over-time data from Google Trends for a single keyword.
@@ -19,8 +16,10 @@ def fetch_interest_over_time(keyword: str, timeframe: str = "today 5-y") -> pd.D
     keyword = keyword.strip().lower()
     logger.info(f"Fetching Google Trends data for '{keyword}' ({timeframe})")
 
-    _pytrends.build_payload([keyword], cat=0, timeframe=timeframe, geo="", gprop="")
-    df = _pytrends.interest_over_time()
+    # Create a fresh TrendReq per call so parallel fetches don't share state
+    pytrends = TrendReq(hl="en-US", tz=360, timeout=(10, 25), retries=2, backoff_factor=0.5)
+    pytrends.build_payload([keyword], cat=0, timeframe=timeframe, geo="", gprop="")
+    df = pytrends.interest_over_time()
 
     if df is None or df.empty:
         raise ValueError(f"No Google Trends data found for '{keyword}'. The topic may be too obscure or misspelled.")
