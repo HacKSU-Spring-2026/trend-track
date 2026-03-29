@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trendlife — Know When a Trend Dies</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f6f2;
+      --bg-card: #ffffff;
+      --text: #1a1a1a;
+      --text-muted: #6b7280;
+      --accent: #e63946;
+      --accent-soft: #fdecea;
+      --border: #e5e7eb;
+      --radius: 16px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 48px;
+      background: rgba(247, 246, 242, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.3s;
+    }
+    nav.scrolled { border-color: var(--border); }
+
+    .nav-logo {
+      font-family: 'Instrument Serif', serif;
+      font-size: 1.4rem;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+    .nav-logo span { color: var(--accent); }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--text);
+      color: #fff;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 10px 20px;
+      border-radius: 999px;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .nav-cta:hover { background: #333; transform: translateY(-1px); }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 120px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 999px;
+      margin-bottom: 32px;
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeUp 0.6s ease forwards 0.2s;
+    }
+
+    .hero h1 {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(3rem, 7vw, 6rem);
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      max-width: 800px;
+      opacity: 0;
+      transform: translateY(24px);
+      animation: fadeUp 0.7s ease forwards 0.35s;
+    }
+    .hero h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .hero-sub {
+      margin-top: 24px;
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 520px;
+      line-height: 1.7;
+      opacity: 0;
+      transform: translateY(24px);
+      animation: fadeUp 0.7s ease forwards 0.5s;
+    }
+
+    .hero-actions {
+      margin-top: 44px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      opacity: 0;
+      transform: translateY(24px);
+      animation: fadeUp 0.7s ease forwards 0.65s;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--text);
+      color: #fff;
+      text-decoration: none;
+      font-size: 1rem;
+      font-weight: 500;
+      padding: 16px 32px;
+      border-radius: 999px;
+      transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    }
+    .btn-primary:hover {
+      background: #222;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.18);
+    }
+    .btn-primary .arrow {
+      display: inline-block;
+      transition: transform 0.2s;
+    }
+    .btn-primary:hover .arrow { transform: translateX(4px); }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      padding: 16px 8px;
+      transition: color 0.2s;
+    }
+    .btn-ghost:hover { color: var(--text); }
+
+    /* floating score pills */
+    .hero-pills {
+      margin-top: 64px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      opacity: 0;
+      animation: fadeUp 0.7s ease forwards 0.85s;
+    }
+    .pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .pill-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot-red    { background: #ef4444; }
+    .dot-orange { background: #f97316; }
+    .dot-green  { background: #22c55e; }
+    .dot-yellow { background: #eab308; }
+
+    /* ── Sections shared ── */
+    section {
+      padding: 100px 24px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.15;
+      letter-spacing: -0.025em;
+      color: var(--text);
+      max-width: 560px;
+    }
+
+    .section-desc {
+      margin-top: 16px;
+      font-size: 1rem;
+      color: var(--text-muted);
+      max-width: 480px;
+      line-height: 1.7;
+    }
+
+    /* ── Features ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 56px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      transition: transform 0.25s, box-shadow 0.25s;
+    }
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+    }
+
+    .feature-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      background: var(--accent-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.3rem;
+      margin-bottom: 20px;
+    }
+
+    .feature-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.65;
+    }
+
+    /* ── How it works ── */
+    #how { background: #fff; padding: 100px 24px; }
+    #how .inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .steps {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      margin-top: 48px;
+    }
+
+    .step {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    .step-num {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      background: var(--text);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .step h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .step p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* mock screen */
+    .mock-screen {
+      background: #0d1117;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+      overflow: hidden;
+    }
+
+    .mock-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+    .mock-bar span {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+    .mock-bar span:nth-child(1) { background: #ef4444; }
+    .mock-bar span:nth-child(2) { background: #f59e0b; }
+    .mock-bar span:nth-child(3) { background: #22c55e; }
+
+    .mock-row {
+      height: 10px;
+      border-radius: 4px;
+      background: #1f2937;
+      margin-bottom: 10px;
+    }
+    .mock-row.short { width: 45%; }
+    .mock-row.accent { background: #e63946; width: 60%; }
+
+    .mock-chart {
+      height: 100px;
+      margin: 20px 0;
+      background: linear-gradient(180deg, rgba(230,57,70,0.15) 0%, transparent 100%);
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    .mock-chart svg {
+      position: absolute;
+      bottom: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+
+    .mock-stat-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .mock-stat {
+      background: #161b22;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .mock-stat-label {
+      height: 6px;
+      border-radius: 3px;
+      background: #30363d;
+      width: 70%;
+      margin-bottom: 8px;
+    }
+    .mock-stat-val {
+      height: 10px;
+      border-radius: 4px;
+      background: #e63946;
+      width: 50%;
+    }
+
+    /* ── About / Hackathon ── */
+    #about {
+      padding: 100px 24px;
+      background: var(--bg);
+    }
+    #about .inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .about-card {
+      background: var(--text);
+      color: #fff;
+      border-radius: var(--radius);
+      padding: 48px;
+    }
+
+    .about-card .tag {
+      display: inline-block;
+      background: rgba(255,255,255,0.12);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 999px;
+      margin-bottom: 24px;
+    }
+
+    .about-card h3 {
+      font-family: 'Instrument Serif', serif;
+      font-size: 1.9rem;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .about-card p {
+      font-size: 0.9rem;
+      line-height: 1.7;
+      color: rgba(255,255,255,0.65);
+    }
+
+    .about-card .divider {
+      height: 1px;
+      background: rgba(255,255,255,0.12);
+      margin: 28px 0;
+    }
+
+    .about-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .about-meta span {
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.5);
+    }
+    .about-meta strong {
+      font-size: 0.9rem;
+      color: #fff;
+      font-weight: 500;
+    }
+
+    /* ── CTA section ── */
+    #cta {
+      padding: 100px 24px;
+      text-align: center;
+    }
+    #cta .inner {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    #cta h2 {
+      font-family: 'Instrument Serif', serif;
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+    }
+    #cta h2 em { font-style: italic; color: var(--accent); }
+    #cta p {
+      margin-top: 20px;
+      font-size: 1rem;
+      color: var(--text-muted);
+      line-height: 1.7;
+    }
+    #cta .hero-actions { margin-top: 40px; }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 32px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    footer .logo {
+      font-family: 'Instrument Serif', serif;
+      font-size: 1.1rem;
+      color: var(--text);
+      text-decoration: none;
+    }
+    footer .logo span { color: var(--accent); }
+    footer p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Scroll animations ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      nav { padding: 16px 24px; }
+      #how .inner, #about .inner { grid-template-columns: 1fr; gap: 40px; }
+      .mock-screen { display: none; }
+      footer { padding: 24px; flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav id="navbar">
+    <a href="#" class="nav-logo">Trend<span>Life</span></a>
+    <a href="http://localhost:8501" class="nav-cta">
+      Launch App <span class="arrow">→</span>
+    </a>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">Trend Intelligence Tool</div>
+    <h1>Know when a trend<br />dies <em>before</em> everyone else.</h1>
+    <p class="hero-sub">
+      Trendlife forecasts the lifecycle of any topic using 5 years of Google Trends data, Prophet time-series modeling, and AI-generated analyst reports.
+    </p>
+    <div class="hero-actions">
+      <a href="http://localhost:8501" class="btn-primary">
+        Launch App <span class="arrow">→</span>
+      </a>
+      <a href="#how" class="btn-ghost">See how it works ↓</a>
+    </div>
+    <div class="hero-pills">
+      <div class="pill"><span class="pill-dot dot-red"></span> NFT — Dead</div>
+      <div class="pill"><span class="pill-dot dot-red"></span> Metaverse — Dying</div>
+      <div class="pill"><span class="pill-dot dot-orange"></span> ChatGPT — Declining</div>
+      <div class="pill"><span class="pill-dot dot-yellow"></span> Wordle — Fading</div>
+      <div class="pill"><span class="pill-dot dot-green"></span> Claude AI — Rising</div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features">
+    <div class="reveal">
+      <p class="section-label">What it does</p>
+      <h2 class="section-title">Every trend has a lifespan. We measure it.</h2>
+      <p class="section-desc">
+        From viral moments to slow cultural shifts — Trendlife gives you the data and the forecast to act before the curve turns.
+      </p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon">📈</div>
+        <h3>Lifecycle Forecasting</h3>
+        <p>Prophet-powered time-series models trained on 5 years of weekly Google Trends data, forecasting 12 months ahead with confidence intervals.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">☠️</div>
+        <h3>Death Date Prediction</h3>
+        <p>Every topic gets a predicted death date — the moment interest drops below the threshold of cultural relevance, with days remaining.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">⚡</div>
+        <h3>Trend Velocity</h3>
+        <p>See how fast a trend is accelerating or decelerating week-over-week. Catch the inflection point before it's obvious.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">🤖</div>
+        <h3>AI Analyst Reports</h3>
+        <p>On-demand AI reports written in plain prose — explaining what's happening, why, and what to expect next, based on real metrics.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">⚖️</div>
+        <h3>Side-by-Side Comparison</h3>
+        <p>Compare two topics head-to-head: overlaid charts, matched metrics, and a comparative AI report covering which has the longer runway.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">🔍</div>
+        <h3>Phase Classification</h3>
+        <p>Each trend is automatically classified into its current phase — Rising, Peaking, Declining, or Dead — with color-coded visual indicators.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <div id="how">
+    <div class="inner">
+      <div>
+        <div class="reveal">
+          <p class="section-label">How it works</p>
+          <h2 class="section-title">From keyword to forecast in seconds.</h2>
+        </div>
+        <div class="steps">
+          <div class="step reveal">
+            <div class="step-num">1</div>
+            <div>
+              <h4>Enter any topic</h4>
+              <p>Type any keyword — a product, a person, a movement, a meme. Trendlife fetches 5 years of weekly Google Trends data instantly.</p>
+            </div>
+          </div>
+          <div class="step reveal">
+            <div class="step-num">2</div>
+            <div>
+              <h4>Model runs automatically</h4>
+              <p>A Prophet time-series model fits to the historical data and projects 12 months into the future, including confidence bands.</p>
+            </div>
+          </div>
+          <div class="step reveal">
+            <div class="step-num">3</div>
+            <div>
+              <h4>Get the full picture</h4>
+              <p>See phase classification, death date, momentum, volatility, velocity charts, and an optional AI analyst report — all in one view.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mock-screen reveal">
+        <div class="mock-bar">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="mock-row short"></div>
+        <div class="mock-row accent"></div>
+        <div class="mock-chart">
+          <svg viewBox="0 0 300 100" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#e63946" stop-opacity="0.4"/>
+                <stop offset="100%" stop-color="#e63946" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M0,80 C30,75 50,40 80,30 C110,20 130,15 160,25 C190,35 210,60 240,70 C265,78 280,85 300,90 L300,100 L0,100 Z" fill="url(#g)"/>
+            <path d="M0,80 C30,75 50,40 80,30 C110,20 130,15 160,25 C190,35 210,60 240,70 C265,78 280,85 300,90" fill="none" stroke="#e63946" stroke-width="2"/>
+          </svg>
+        </div>
+        <div class="mock-stat-row">
+          <div class="mock-stat"><div class="mock-stat-label"></div><div class="mock-stat-val"></div></div>
+          <div class="mock-stat"><div class="mock-stat-label"></div><div class="mock-stat-val" style="background:#60a5fa;width:65%"></div></div>
+          <div class="mock-stat"><div class="mock-stat-label"></div><div class="mock-stat-val" style="background:#22c55e;width:40%"></div></div>
+        </div>
+        <div class="mock-row" style="margin-top:16px;width:80%"></div>
+        <div class="mock-row short"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- About -->
+  <div id="about">
+    <div class="inner">
+      <div class="about-card reveal">
+        <div class="tag">Built at a Hackathon</div>
+        <h3>Kent Hack Enough<br />Kent State University</h3>
+        <div class="divider"></div>
+        <div class="about-meta">
+          <span>Developer</span>
+          <strong>Dovlet Gurbanov</strong>
+          <span style="margin-top:16px">Event</span>
+          <strong>Kent Hack Enough — Kent State University</strong>
+        </div>
+      </div>
+      <div>
+        <div class="reveal">
+          <p class="section-label">The story</p>
+          <h2 class="section-title">Built in a 24 hours period, powered by real data.</h2>
+          <p class="section-desc" style="margin-top:20px">
+            Trendlife was conceived and built during Kent Hack Enough at Kent State University — one of the Midwest's largest collegiate hackathons.
+          </p>
+          <p class="section-desc" style="margin-top:16px">
+            The idea was simple: everyone talks about what's trending, but nobody tells you when it's over. Trendlife fills that gap with machine learning, real-time data, and AI-powered analysis.
+          </p>
+          <p class="section-desc" style="margin-top:16px">
+            Developed entirely by Dovlet Gurbanov, from data pipeline to UI, in a single hackathon sprint.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <section id="cta">
+    <div class="inner reveal">
+      <h2>Stop guessing.<br /><em>Start forecasting.</em></h2>
+      <p>Analyze any trend in seconds. See its death date, its phase, its velocity — and get an AI report that tells you exactly what it means.</p>
+      <div class="hero-actions">
+        <a href="http://localhost:8501" class="btn-primary">
+          Launch Trendlife <span class="arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <a href="#" class="logo">Trend<span>Life</span></a>
+    <p>Built by Dovlet Gurbanov · Kent Hack Enough · Kent State University</p>
+  </footer>
+
+  <script>
+    // Nav scroll shadow
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 10);
+    });
+
+    // Scroll reveal
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          // stagger cards in the same parent
+          const siblings = entry.target.parentElement.querySelectorAll('.reveal');
+          let delay = 0;
+          siblings.forEach((el, idx) => {
+            if (el === entry.target) delay = idx * 80;
+          });
+          setTimeout(() => {
+            entry.target.classList.add('visible');
+          }, delay);
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12 });
+
+    reveals.forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>

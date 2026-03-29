@@ -22,7 +22,7 @@ def _get_collection():
         return _collection
 
     uri = os.getenv("MONGO_URI", "")
-    db_name = os.getenv("MONGO_DB_NAME", "trenddeath")
+    db_name = os.getenv("MONGO_DB_NAME", "trendlife")
 
     if not uri:
         logger.warning("MONGO_URI not set — MongoDB persistence disabled.")
@@ -47,7 +47,7 @@ def get_cached_result(topic: str) -> Optional[dict]:
     col = _get_collection()
     if col is None:
         return None
-    doc = col.find_one({"topic": topic}, {"_id": 0})
+    doc = col.find_one({"topic": topic.strip().lower()}, {"_id": 0})
     if doc:
         logger.info(f"Cache hit for '{topic}'")
     return doc
@@ -110,3 +110,52 @@ def get_recent_searches(limit: int = 10) -> list[dict]:
     except Exception as exc:
         logger.error(f"Failed to fetch recent searches: {exc}")
         return []
+
+
+def save_comparison(kw_a: str, kw_b: str) -> None:
+    """Upsert a comparison pair, updating the timestamp on re-compare."""
+    col = _get_collection()
+    if col is None:
+        return
+    try:
+        db = col.database
+        # Treat (A vs B) and (B vs A) as the same pair by sorting
+        pair = sorted([kw_a, kw_b])
+        db["comparisons"].update_one(
+            {"pair": pair},
+            {"$set": {"kw_a": pair[0], "kw_b": pair[1], "compared_at": datetime.now(tz=timezone.utc), "pair": pair}},
+            upsert=True,
+        )
+        logger.info(f"Saved comparison '{kw_a}' vs '{kw_b}'")
+    except Exception as exc:
+        logger.error(f"Failed to save comparison: {exc}")
+
+
+def get_recent_comparisons(limit: int = 10) -> list[dict]:
+    """Return the last `limit` comparisons, sorted by most recent."""
+    col = _get_collection()
+    if col is None:
+        return []
+    try:
+        db = col.database
+        docs = list(
+            db["comparisons"].find({}, {"_id": 0})
+            .sort("compared_at", -1)
+            .limit(limit)
+        )
+        return docs
+    except Exception as exc:
+        logger.error(f"Failed to fetch recent comparisons: {exc}")
+        return []
+
+
+def save_ai_report(topic: str, report: str) -> None:
+    """Persist the AI-generated report text for a topic."""
+    col = _get_collection()
+    if col is None:
+        return
+    try:
+        col.update_one({"topic": topic}, {"$set": {"ai_report": report}})
+        logger.info(f"Saved AI report for '{topic}'")
+    except Exception as exc:
+        logger.error(f"Failed to save AI report: {exc}")
