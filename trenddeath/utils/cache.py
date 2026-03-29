@@ -11,6 +11,7 @@ logger = get_logger(__name__)
 
 
 def get_or_fetch(keyword: str, force_refresh: bool = False) -> dict:
+    keyword = keyword.strip().lower()
     """
     Main orchestrator. Returns a result dict for the given keyword.
 

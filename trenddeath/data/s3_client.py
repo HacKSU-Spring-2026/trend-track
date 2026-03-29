@@ -35,7 +35,7 @@ def _get_client():
             aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
             region_name=os.getenv("AWS_REGION", "us-east-1"),
         )
-        _bucket = os.getenv("AWS_BUCKET_NAME", "trenddeath-snapshots")
+        _bucket = os.getenv("AWS_BUCKET_NAME", "trendlife-snapshots")
         logger.info(f"S3 client ready (bucket: {_bucket})")
     except Exception as exc:
         logger.error(f"Failed to create S3 client: {exc}")

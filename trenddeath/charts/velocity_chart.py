@@ -5,12 +5,12 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-_BG = "#0e1117"
-_PAPER = "#0e1117"
-_GRID = "#1f2937"
-_POS = "rgba(34,197,94,0.75)"     # green
-_NEG = "rgba(239,68,68,0.75)"     # red
-_MA_LINE = "#fbbf24"              # amber rolling average
+_BG = "#ffffff"
+_PAPER = "#ffffff"
+_GRID = "#f3f4f6"
+_POS = "rgba(22,163,74,0.7)"      # green
+_NEG = "rgba(230,57,70,0.7)"      # red accent
+_MA_LINE = "#1a1a1a"              # dark rolling average
 
 
 def build_velocity_chart(forecast_df: pd.DataFrame, keyword: str) -> go.Figure:
@@ -61,11 +61,11 @@ def build_velocity_chart(forecast_df: pd.DataFrame, keyword: str) -> go.Figure:
     fig.update_layout(
         title=dict(
             text=f"<b>{keyword}</b> — Trend Velocity (Week-over-Week Change)",
-            font=dict(size=14, color="#f9fafb"),
+            font=dict(size=14, color="#1a1a1a"),
         ),
         paper_bgcolor=_PAPER,
         plot_bgcolor=_BG,
-        font=dict(color="#d1d5db"),
+        font=dict(color="#1a1a1a"),
         xaxis=dict(
             showgrid=True,
             gridcolor=_GRID,
@@ -82,7 +82,7 @@ def build_velocity_chart(forecast_df: pd.DataFrame, keyword: str) -> go.Figure:
             bgcolor="rgba(0,0,0,0)",
             bordercolor=_GRID,
             borderwidth=1,
-            font=dict(color="#d1d5db"),
+            font=dict(color="#6b7280"),
         ),
         bargap=0.1,
         hovermode="x unified",

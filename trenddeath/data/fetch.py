@@ -16,6 +16,7 @@ def fetch_interest_over_time(keyword: str, timeframe: str = "today 5-y") -> pd.D
     Returns a DataFrame with a DatetimeIndex and a single 'interest' column (0–100).
     Raises ValueError if pytrends returns no data for the keyword.
     """
+    keyword = keyword.strip().lower()
     logger.info(f"Fetching Google Trends data for '{keyword}' ({timeframe})")
 
     _pytrends.build_payload([keyword], cat=0, timeframe=timeframe, geo="", gprop="")

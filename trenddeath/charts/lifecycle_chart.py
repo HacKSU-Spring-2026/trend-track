@@ -9,14 +9,14 @@ from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-_BG = "#0e1117"
-_PAPER = "#0e1117"
-_GRID = "#1f2937"
-_HISTORICAL = "#60a5fa"      # blue
-_FORECAST = "#a78bfa"        # purple
-_INTERVAL = "rgba(167,139,250,0.15)"
-_THRESHOLD = "#ef4444"       # red
-_DEATH_LINE = "rgba(239,68,68,0.8)"
+_BG = "#ffffff"
+_PAPER = "#ffffff"
+_GRID = "#f3f4f6"
+_HISTORICAL = "#e63946"      # red accent
+_FORECAST = "#6b7280"        # muted gray
+_INTERVAL = "rgba(107,114,128,0.1)"
+_THRESHOLD = "#e63946"       # red
+_DEATH_LINE = "rgba(230,57,70,0.8)"
 
 
 def build_lifecycle_chart(
@@ -109,7 +109,7 @@ def build_lifecycle_chart(
         text=f"{phase.emoji()} {phase.value}",
         showarrow=False,
         font=dict(size=14, color=phase.color()),
-        bgcolor="rgba(0,0,0,0.4)",
+        bgcolor="rgba(255,255,255,0.9)",
         bordercolor=phase.color(),
         borderwidth=1,
         borderpad=6,
@@ -119,11 +119,11 @@ def build_lifecycle_chart(
     fig.update_layout(
         title=dict(
             text=f"<b>{keyword}</b> — Interest Over Time & Forecast",
-            font=dict(size=16, color="#f9fafb"),
+            font=dict(size=16, color="#1a1a1a"),
         ),
         paper_bgcolor=_PAPER,
         plot_bgcolor=_BG,
-        font=dict(color="#d1d5db"),
+        font=dict(color="#1a1a1a"),
         xaxis=dict(
             showgrid=True,
             gridcolor=_GRID,
@@ -141,7 +141,7 @@ def build_lifecycle_chart(
             bgcolor="rgba(0,0,0,0)",
             bordercolor=_GRID,
             borderwidth=1,
-            font=dict(color="#d1d5db"),
+            font=dict(color="#6b7280"),
         ),
         hovermode="x unified",
         margin=dict(l=50, r=30, t=60, b=50),
