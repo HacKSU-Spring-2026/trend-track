@@ -23,9 +23,10 @@ def _groq(prompt: str) -> str:
     if _groq_client is None:
         return "⚠️ GROQ_API_KEY not set — AI report unavailable."
     response = _groq_client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+        model="llama-3.1-8b-instant",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.7,
+        max_tokens=300,
     )
     return response.choices[0].message.content
 
@@ -35,44 +36,29 @@ def generate_trend_report(
     death_display: str, days_left, momentum_pct: float, avg_score: float,
     volatility: float, weeks_above_50: int,
 ) -> str:
-    prompt = f"""You are a trend analyst. Write a concise, insightful report (2–3 short paragraphs) about the trend lifecycle of "{keyword}" based on the data below. Be direct and analytical — explain what is happening, why it might be happening, and what to expect. Do not use bullet points or headers. Write in plain prose.
-
-Data:
-- Current interest score: {current}/100
-- All-time peak: {peak}/100 on {peak_date}
-- Current phase: {phase}
-- Predicted death date: {death_display}
-- Days until death: {days_left if days_left is not None else "beyond forecast window"}
-- 3-month momentum: {momentum_pct:+.1f}%
-- 5-year average score: {avg_score:.1f}
-- Volatility (std dev): {volatility:.1f}
-- Weeks with score ≥ 50: {weeks_above_50}
-
-Write the report now:"""
+    days_str = days_left if days_left is not None else "beyond forecast window"
+    prompt = (
+        f'Trend analyst report for "{keyword}" in 2-3 short paragraphs, plain prose, no headers.\n'
+        f"Phase: {phase} | Score: {current}/100 | Peak: {peak}/100 ({peak_date}) | "
+        f"Death: {death_display} ({days_str} days) | Momentum: {momentum_pct:+.1f}% | "
+        f"Avg: {avg_score:.1f} | Volatility: {volatility:.1f} | Weeks≥50: {weeks_above_50}"
+    )
     return _groq(prompt)
 
 
 def generate_comparison_report(kw_a: str, data_a: dict, kw_b: str, data_b: dict) -> str:
     def fmt(d: dict) -> str:
         return (
-            f"  - Current score: {d['current']}/100\n"
-            f"  - All-time peak: {d['peak']}/100 on {d['peak_date']}\n"
-            f"  - Phase: {d['phase']}\n"
-            f"  - Predicted death: {d['death_display']}\n"
-            f"  - 3-month momentum: {d['momentum_pct']:+.1f}%\n"
-            f"  - 5-year average: {d['avg_score']:.1f}\n"
-            f"  - Volatility (σ): {d['volatility']:.1f}\n"
-            f"  - Weeks ≥ 50: {d['weeks_above_50']}"
+            f"Score:{d['current']}/100 Peak:{d['peak']}/100({d['peak_date']}) "
+            f"Phase:{d['phase']} Death:{d['death_display']} "
+            f"Momentum:{d['momentum_pct']:+.1f}% Avg:{d['avg_score']:.1f} "
+            f"Vol:{d['volatility']:.1f} Wks≥50:{d['weeks_above_50']}"
         )
-    prompt = f"""You are a trend analyst. Compare the trend lifecycles of "{kw_a}" and "{kw_b}" in 2–3 short paragraphs. Be direct — explain which is stronger, which is declining faster, which has a longer runway, and what it means for someone tracking these trends. Do not use bullet points or headers. Write in plain prose.
-
-{kw_a}:
-{fmt(data_a)}
-
-{kw_b}:
-{fmt(data_b)}
-
-Write the comparison now:"""
+    prompt = (
+        f'Compare trends "{kw_a}" vs "{kw_b}" in 2-3 short paragraphs, plain prose, no headers.\n'
+        f"{kw_a}: {fmt(data_a)}\n"
+        f"{kw_b}: {fmt(data_b)}"
+    )
     return _groq(prompt)
 
 
