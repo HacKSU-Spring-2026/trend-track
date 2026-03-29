@@ -11,13 +11,21 @@ DEATH_THRESHOLD = 10.0  # interest score below this = effectively dead
 DEATH_CONSECUTIVE_WEEKS = 4  # must stay below threshold for this many weeks in a row
 
 
-def find_death_date(forecast_df: pd.DataFrame, threshold: float = DEATH_THRESHOLD) -> Optional[date]:
+def find_death_date(
+    forecast_df: pd.DataFrame,
+    threshold: float = DEATH_THRESHOLD,
+    use_confidence_bound: bool = True,
+) -> Optional[date]:
     """
     Scan future forecast rows and return the first date of a sustained drop below threshold.
 
-    A trend is considered dead only when yhat stays below the threshold for
-    DEATH_CONSECUTIVE_WEEKS consecutive weeks — this prevents a single noisy
-    dip from being flagged as death for strong evergreen trends.
+    A trend is considered dead only when the chosen signal stays below the threshold
+    for DEATH_CONSECUTIVE_WEEKS consecutive weeks.
+
+    When use_confidence_bound=True (default), uses yhat_upper instead of yhat.
+    This means we only call a trend dead when even the optimistic upper bound of
+    the 80% confidence interval is below the threshold — significantly reducing
+    false death predictions for volatile or seasonal trends.
 
     Only looks at rows beyond today (y is NaN = future rows).
     Returns None if no sustained drop is found in the forecast window.
@@ -29,14 +37,16 @@ def find_death_date(forecast_df: pd.DataFrame, threshold: float = DEATH_THRESHOL
         logger.warning("No future rows in forecast — cannot detect death date")
         return None
 
-    # Slide a window looking for DEATH_CONSECUTIVE_WEEKS consecutive weeks below threshold
-    below_mask = future["yhat"] < threshold
+    # Use upper confidence bound for a more conservative (fewer false positives) death call
+    signal_col = "yhat_upper" if use_confidence_bound else "yhat"
+    logger.info(f"Death detection using '{signal_col}' against threshold={threshold}")
+
+    below_mask = future[signal_col] < threshold
     consecutive = 0
     for i, is_below in enumerate(below_mask):
         if is_below:
             consecutive += 1
             if consecutive >= DEATH_CONSECUTIVE_WEEKS:
-                # Return the first week of this sustained run
                 death_idx = i - DEATH_CONSECUTIVE_WEEKS + 1
                 death_ts = future.iloc[death_idx]["ds"]
                 death_date = death_ts.date() if hasattr(death_ts, "date") else date.fromisoformat(str(death_ts)[:10])

@@ -355,10 +355,11 @@ trending_topics = fetch_trending_now()
 
 # ─── Search area ────────────────────────────────────────────────────────────
 if mode == "Single topic":
-    if "trending_select" in st.session_state:
-        chosen = st.session_state["trending_select"]
-        if chosen and chosen != "— select —":
-            st.session_state["search_input"] = chosen
+    chosen = st.session_state.get("trending_select", "— select —")
+    last_applied = st.session_state.get("_last_applied_trending", "— select —")
+    if chosen and chosen != "— select —" and chosen != last_applied:
+        st.session_state["search_input"] = chosen
+        st.session_state["_last_applied_trending"] = chosen
 
     col_input, col_btn, col_trending = st.columns([4, 1, 3])
     with col_input:
@@ -573,15 +574,23 @@ def _render_ai_report_single(keyword: str, m: dict) -> None:
 
 def _fetch_result(keyword: str):
     """Fetch + forecast for a keyword, returning (result, forecast_df, error)."""
+    cache_key = f"_forecast_df_{keyword}"
     try:
         result = get_or_fetch(keyword)
         forecast_df = result.get("forecast_df")
-        if forecast_df is None and result.get("raw_data"):
-            raw_df = pd.DataFrame(result["raw_data"])
-            raw_df["date"] = pd.to_datetime(raw_df["date"])
-            raw_df = raw_df.set_index("date")
-            from model.prophet_model import fit_and_forecast
-            forecast_df = fit_and_forecast(raw_df, periods=365)
+        if forecast_df is None:
+            # Return cached forecast from session state if available
+            if cache_key in st.session_state:
+                forecast_df = st.session_state[cache_key]
+            elif result.get("raw_data"):
+                raw_df = pd.DataFrame(result["raw_data"])
+                raw_df["date"] = pd.to_datetime(raw_df["date"])
+                raw_df = raw_df.set_index("date")
+                from model.prophet_model import fit_and_forecast
+                forecast_df = fit_and_forecast(raw_df, periods=365)
+                st.session_state[cache_key] = forecast_df
+        else:
+            st.session_state[cache_key] = forecast_df
         return result, forecast_df, None
     except Exception as e:
         return None, None, str(e)
@@ -602,14 +611,16 @@ if keyword and mode == "Single topic":
         if cached:
             st.info("Showing last cached result instead.")
             result = cached
-            forecast_df = None
-            if result.get("raw_data"):
+            cache_key = f"_forecast_df_{keyword}"
+            forecast_df = st.session_state.get(cache_key)
+            if forecast_df is None and result.get("raw_data"):
                 raw_df = pd.DataFrame(result["raw_data"])
                 raw_df["date"] = pd.to_datetime(raw_df["date"])
                 raw_df = raw_df.set_index("date")
                 with st.spinner("Re-running forecast from cached data…"):
                     from model.prophet_model import fit_and_forecast
                     forecast_df = fit_and_forecast(raw_df, periods=365)
+                    st.session_state[cache_key] = forecast_df
 
     if result:
         # Pre-load stored AI report
