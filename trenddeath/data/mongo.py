@@ -159,3 +159,35 @@ def save_ai_report(topic: str, report: str) -> None:
         logger.info(f"Saved AI report for '{topic}'")
     except Exception as exc:
         logger.error(f"Failed to save AI report: {exc}")
+
+
+def save_comparison_report(kw_a: str, kw_b: str, report: str) -> None:
+    """Persist the AI comparison report for a sorted pair."""
+    col = _get_collection()
+    if col is None:
+        return
+    try:
+        db = col.database
+        pair = sorted([kw_a, kw_b])
+        db["comparisons"].update_one(
+            {"pair": pair},
+            {"$set": {"ai_report": report}},
+        )
+        logger.info(f"Saved comparison report for '{kw_a}' vs '{kw_b}'")
+    except Exception as exc:
+        logger.error(f"Failed to save comparison report: {exc}")
+
+
+def get_comparison_report(kw_a: str, kw_b: str) -> Optional[str]:
+    """Return the stored AI comparison report for a pair, or None."""
+    col = _get_collection()
+    if col is None:
+        return None
+    try:
+        db = col.database
+        pair = sorted([kw_a, kw_b])
+        doc = db["comparisons"].find_one({"pair": pair}, {"ai_report": 1, "_id": 0})
+        return doc.get("ai_report") if doc else None
+    except Exception as exc:
+        logger.error(f"Failed to fetch comparison report: {exc}")
+        return None

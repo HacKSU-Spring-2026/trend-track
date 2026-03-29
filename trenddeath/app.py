@@ -77,7 +77,7 @@ Write the comparison now:"""
 
 
 from data.fetch import fetch_trending_now
-from data.mongo import get_recent_searches, save_ai_report, get_cached_result, save_comparison, get_recent_comparisons
+from data.mongo import get_recent_searches, save_ai_report, get_cached_result, save_comparison, get_recent_comparisons, save_comparison_report, get_comparison_report
 from model.trend_phase import TrendPhase
 from charts.lifecycle_chart import build_lifecycle_chart
 from charts.velocity_chart import build_velocity_chart
@@ -246,13 +246,16 @@ st.markdown(
 
     /* Expander */
     [data-testid="stExpander"] {
-        background: #ffffff;
+        background: #ffffff !important;
         border: 1px solid #e5e7eb;
         border-radius: 10px;
     }
-    [data-testid="stExpander"] summary,
-    [data-testid="stExpander"] summary p,
-    [data-testid="stExpander"] summary span {
+    [data-testid="stExpander"] summary {
+        background: #ffffff !important;
+        color: #1a1a1a !important;
+    }
+    [data-testid="stExpander"] summary *,
+    .st-emotion-cache-11ofl8m {
         color: #1a1a1a !important;
     }
 
@@ -784,6 +787,10 @@ if kw_a and kw_b and mode == "Compare two topics":
         st.markdown('<p class="section-label">AI comparison report</p>', unsafe_allow_html=True)
 
         cmp_key = f"compare_report_{kw_a}_vs_{kw_b}"
+        if cmp_key not in st.session_state:
+            stored = get_comparison_report(kw_a, kw_b)
+            if stored:
+                st.session_state[cmp_key] = stored
         cmp_report_exists = bool(cmp_key in st.session_state and st.session_state[cmp_key])
 
         col_cmp_btn, _ = st.columns([1, 4])
@@ -808,6 +815,7 @@ if kw_a and kw_b and mode == "Compare two topics":
                             volatility=mb['volatility'], weeks_above_50=mb['weeks_above_50'],
                         ),
                     )
+                    save_comparison_report(kw_a, kw_b, st.session_state[cmp_key])
                 st.rerun()
 
             if st.session_state[cmp_key]:
