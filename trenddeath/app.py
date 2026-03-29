@@ -4,13 +4,56 @@ from datetime import date, datetime
 
 import pandas as pd
 import streamlit as st
-import google.generativeai as genai
+from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
 
 # Make sure trenddeath submodules are importable when running from repo root
 sys.path.insert(0, os.path.dirname(__file__))
+
+# ─── Gemini setup ───────────────────────────────────────────────────────────
+_groq_key = os.getenv("GROQ_API_KEY")
+_groq_client = Groq(api_key=_groq_key) if _groq_key else None
+
+
+def generate_trend_report(
+    keyword: str,
+    phase: str,
+    current: int,
+    peak: int,
+    peak_date: str,
+    death_display: str,
+    days_left,
+    momentum_pct: float,
+    avg_score: float,
+    volatility: float,
+    weeks_above_50: int,
+) -> str:
+    if _groq_client is None:
+        return "⚠️ GROQ_API_KEY not set — AI report unavailable."
+
+    prompt = f"""You are a trend analyst. Write a concise, insightful report (2–3 short paragraphs) about the trend lifecycle of "{keyword}" based on the data below. Be direct and analytical — explain what is happening, why it might be happening, and what to expect. Do not use bullet points or headers. Write in plain prose.
+
+Data:
+- Current interest score: {current}/100
+- All-time peak: {peak}/100 on {peak_date}
+- Current phase: {phase}
+- Predicted death date: {death_display}
+- Days until death: {days_left if days_left is not None else "beyond forecast window"}
+- 3-month momentum: {momentum_pct:+.1f}%
+- 5-year average score: {avg_score:.1f}
+- Volatility (std dev): {volatility:.1f}
+- Weeks with score ≥ 50: {weeks_above_50}
+
+Write the report now:"""
+
+    response = _groq_client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+    )
+    return response.choices[0].message.content
 
 from data.fetch import fetch_trending_now
 from data.mongo import get_recent_searches
@@ -402,6 +445,49 @@ if keyword:
                     )
                 else:
                     st.info("No forecast data available.")
+
+        # ── AI Report ───────────────────────────────────────────────────────
+        st.markdown("<hr>", unsafe_allow_html=True)
+        st.markdown('<p class="section-label">AI analyst report</p>', unsafe_allow_html=True)
+
+        _avg_score     = avg_score     if raw_data else 0.0
+        _volatility    = volatility    if raw_data else 0.0
+        _momentum_pct  = momentum_pct  if raw_data else 0.0
+        _weeks_above50 = weeks_above_50 if raw_data else 0
+
+        report_key = f"report_{keyword}"
+
+        if report_key not in st.session_state:
+            if st.button("Generate AI report", key="gen_report_btn"):
+                with st.spinner("Generating report…"):
+                    st.session_state[report_key] = generate_trend_report(
+                        keyword        = keyword,
+                        phase          = phase_str,
+                        current        = current,
+                        peak           = peak,
+                        peak_date      = peak_date,
+                        death_display  = death_display,
+                        days_left      = days_left,
+                        momentum_pct   = _momentum_pct,
+                        avg_score      = _avg_score,
+                        volatility     = _volatility,
+                        weeks_above_50 = _weeks_above50,
+                    )
+                st.rerun()
+        else:
+            report_text = st.session_state[report_key]
+            st.markdown(
+                f"""
+                <div style="background:#161b22; border:1px solid #30363d; border-radius:10px;
+                            padding:20px 24px; line-height:1.7; color:#e6edf3; font-size:0.95rem;">
+                    {report_text.replace(chr(10), '<br>')}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            if st.button("Regenerate", key="regen_report_btn"):
+                del st.session_state[report_key]
+                st.rerun()
 
 # ─── Recent searches ────────────────────────────────────────────────────────
 st.markdown("<hr>", unsafe_allow_html=True)

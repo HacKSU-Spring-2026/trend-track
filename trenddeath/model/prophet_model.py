@@ -54,7 +54,11 @@ def fit_and_forecast(df: pd.DataFrame, periods: int = 365) -> pd.DataFrame:
     pd.DataFrame
         Columns: ds, y (historical, NaN for future), yhat, yhat_lower, yhat_upper
     """
-    logger.info(f"Fitting Prophet model on {len(df)} rows, forecasting {periods} days ahead")
+    # Forecast window: at least 3 years (156 weeks) regardless of the periods argument,
+    # so slow-declining evergreen trends (ChatGPT, Bitcoin, etc.) have enough runway
+    # to either cross the threshold meaningfully or stay above it.
+    forecast_weeks = max(periods // 7, 156)
+    logger.info(f"Fitting Prophet model on {len(df)} rows, forecasting {forecast_weeks} weeks ahead")
 
     # Prophet requires columns named 'ds' and 'y'
     prophet_df = df.reset_index().rename(columns={"date": "ds", "interest": "y"})
@@ -78,7 +82,7 @@ def fit_and_forecast(df: pd.DataFrame, periods: int = 365) -> pd.DataFrame:
         model.fit(prophet_df, iter=500)  # more iterations for better convergence on 5y data
 
     # Forecast in weekly steps to match input frequency
-    future = model.make_future_dataframe(periods=periods // 7, freq="W")
+    future = model.make_future_dataframe(periods=forecast_weeks, freq="W")
     forecast = model.predict(future)
 
     # Clip predictions to [0, 100]
