@@ -1,5 +1,4 @@
 from datetime import date
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 import pandas as pd
@@ -9,7 +8,6 @@ from model import prophet_model, trend_phase, death_detector
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
-_executor = ThreadPoolExecutor(max_workers=2)
 
 
 def get_or_fetch(keyword: str, force_refresh: bool = False) -> dict:
@@ -82,13 +80,8 @@ def get_or_fetch(keyword: str, force_refresh: bool = False) -> dict:
         "forecast_df": forecast_df,  # in-memory only
     }
 
-    # --- Persist in background (non-blocking) ---
-    _executor.submit(_persist, keyword, result)
-
-    return result
-
-
-def _persist(keyword: str, result: dict) -> None:
-    """Fire-and-forget persistence to MongoDB. Errors are logged, not raised."""
+    # --- Persist to MongoDB ---
     mongo_payload = {k: v for k, v in result.items() if k != "forecast_df"}
     mongo.save_result(keyword, mongo_payload)
+
+    return result
