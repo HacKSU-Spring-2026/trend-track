@@ -523,6 +523,7 @@ def _render_data_tables(m: dict, keyword: str) -> None:
                 st.info("No forecast data available.")
 
 
+
 def _render_ai_report_single(keyword: str, m: dict) -> None:
     st.markdown("<hr>", unsafe_allow_html=True)
     st.markdown('<p class="section-label">AI analyst report</p>', unsafe_allow_html=True)
@@ -619,16 +620,17 @@ if keyword and mode == "Single topic":
         _render_stat_cards(m, keyword)
         st.markdown("<hr>", unsafe_allow_html=True)
 
+        fig_life, fig_vel = None, None
         if forecast_df is not None:
             death_date_obj = (
                 datetime.strptime(m['death_str'], "%Y-%m-%d").date() if m['death_str'] else None
             )
+            fig_life = build_lifecycle_chart(forecast_df, keyword, m['phase'], death_date_obj)
+            fig_vel = build_velocity_chart(forecast_df, keyword)
             chart_col, vel_col = st.columns([3, 2])
             with chart_col:
-                fig_life = build_lifecycle_chart(forecast_df, keyword, m['phase'], death_date_obj)
                 st.plotly_chart(fig_life, use_container_width=True, config={"displayModeBar": False})
             with vel_col:
-                fig_vel = build_velocity_chart(forecast_df, keyword)
                 st.plotly_chart(fig_vel, use_container_width=True, config={"displayModeBar": False})
         else:
             st.warning("Forecast chart unavailable — no model output found.")
@@ -638,6 +640,7 @@ if keyword and mode == "Single topic":
         st.markdown("<hr>", unsafe_allow_html=True)
         _render_data_tables(m, keyword)
         _render_ai_report_single(keyword, m)
+
 
 
 # ─── Compare two topics ──────────────────────────────────────────────────────
