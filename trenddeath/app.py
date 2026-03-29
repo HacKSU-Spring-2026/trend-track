@@ -21,7 +21,7 @@ from utils.cache import get_or_fetch
 # ─── Page config ────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="TrendDeath",
-    page_icon="💀",
+    # page_icon="💀",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
@@ -151,7 +151,7 @@ st.markdown(
     """
     <div style="padding: 2rem 0 1rem 0;">
         <h1 style="font-size:2.2rem; font-weight:800; color:#e6edf3; margin:0; letter-spacing:-0.02em;">
-            💀 TrendDeath
+            TrendDeath
         </h1>
         <p style="color:#8b949e; font-size:1rem; margin:6px 0 0 0; letter-spacing:0.01em;">
             Every trend has an expiry date. Find out when yours dies.
@@ -243,7 +243,7 @@ if keyword:
             raw_df = raw_df.rename(columns={"interest": "interest"})
             with st.spinner("Re-running forecast from cached data…"):
                 from model.prophet_model import fit_and_forecast
-                forecast_df = fit_and_forecast(raw_df, periods=90)
+                forecast_df = fit_and_forecast(raw_df, periods=365)
 
         # Phase object for colour/emoji
         try:
@@ -301,11 +301,11 @@ if keyword:
 
             with chart_col:
                 fig_life = build_lifecycle_chart(forecast_df, keyword, phase, death_date_obj)
-                st.plotly_chart(fig_life, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig_life, width="stretch", config={"displayModeBar": False})
 
             with vel_col:
                 fig_vel = build_velocity_chart(forecast_df, keyword)
-                st.plotly_chart(fig_vel, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig_vel, width="stretch", config={"displayModeBar": False})
         else:
             st.warning("Forecast chart unavailable — no model output found.")
 

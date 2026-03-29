@@ -46,8 +46,8 @@ def get_or_fetch(keyword: str, force_refresh: bool = False) -> dict:
     logger.info(f"Running full pipeline for '{keyword}'")
     df = fetch.fetch_interest_over_time(keyword)
 
-    # --- Fit Prophet & forecast 90 days ---
-    forecast_df = prophet_model.fit_and_forecast(df, periods=90)
+    # --- Fit Prophet & forecast 365 days ---
+    forecast_df = prophet_model.fit_and_forecast(df, periods=365)
 
     # --- Classify phase ---
     phase = trend_phase.classify_phase(forecast_df, date.today())

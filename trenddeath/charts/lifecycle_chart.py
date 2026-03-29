@@ -89,8 +89,9 @@ def build_lifecycle_chart(
 
     # --- Death date vertical marker ---
     if death_date is not None:
+        death_ts_ms = pd.Timestamp(death_date).value / 1e6  # plotly expects milliseconds
         fig.add_vline(
-            x=str(death_date),
+            x=death_ts_ms,
             line_dash="dash",
             line_color=_DEATH_LINE,
             line_width=2,
